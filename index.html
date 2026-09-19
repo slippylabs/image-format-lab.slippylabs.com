@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Format Lab // image-format-lab.slippylabs.com</title>
+<meta name="description" content="JPEG vs WebP vs AVIF on your own photo — a quality sweep with real file sizes and SSIM scores, a difference view, and an honest check of what your browser can actually encode. Nothing is uploaded.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://image-format-lab.slippylabs.com/">
+<meta property="og:title" content="Image Format Lab // image-format-lab.slippylabs.com">
+<meta property="og:description" content="JPEG vs WebP vs AVIF on your own photo — a quality sweep with real file sizes and SSIM scores, a difference view, and an honest check of what your browser can actually encode. Nothing is uploaded.">
+<meta property="og:image" content="https://image-format-lab.slippylabs.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Image Format Lab // image-format-lab.slippylabs.com">
+<meta name="twitter:description" content="JPEG vs WebP vs AVIF on your own photo — a quality sweep with real file sizes and SSIM scores, a difference view, and an honest check of what your browser can actually encode. Nothing is uploaded.">
+<meta name="twitter:image" content="https://image-format-lab.slippylabs.com/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2234%22%20r%3D%2222%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E">
+<meta name="theme-color" content="#050b10">
+<link rel="stylesheet" href="style.css?v=1">
+<script>/* perf-lite: drop blend/blur effects on low-power devices. ?fx=lite or ?fx=full to override (persisted). */
+(function(){try{var k="slippy-fx",m=location.search.match(/[?&]fx=(lite|full)/),v=m?m[1]:localStorage.getItem(k);if(m)localStorage.setItem(k,v);if(v==="lite"||(v!=="full"&&(navigator.hardwareConcurrency||8)<=2))document.documentElement.classList.add("perf-lite");}catch(e){}})();</script>
+</head>
+<body>
+
+<div class="starfield"></div>
+<div class="scanlines"></div>
+
+<main class="page-wrap">
+  <div class="hud-panel wide">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="callsign-row">
+      <div class="toad-avatar-wrap">
+        <svg class="toad-avatar" width="46" height="46" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="lock-reticle"></div>
+      </div>
+      <span class="callsign">Workshop Division // Tool</span>
+      <div class="nav-links">
+        <a href="https://projects.slippylabs.com/" class="logout-link">← Archive</a>
+      </div>
+    </div>
+
+
+    <h1>IMAGE FORMAT LAB</h1>
+    <p class="subtitle">Every &ldquo;WebP is 30% smaller&rdquo; claim depends on the picture. Put yours in, sweep the quality, and read the size against a measured similarity score instead of a blog post.</p>
+
+    <div class="tool-field-row">
+      <label class="tool-field-label" for="file-input">Image — stays in this tab, nothing is uploaded</label>
+      <input class="tool-file-input" id="file-input" type="file" accept="image/*">
+    </div>
+    <div class="tool-controls">
+      <button class="tool-btn" id="sample-btn">Load Test Image</button>
+      <button class="tool-btn" id="sweep-btn">Run Quality Sweep</button>
+      <button class="tool-btn ghost" id="download-btn">Download Current</button>
+      <a id="download-link" hidden></a>
+    </div>
+    <p class="tool-note" id="file-error" role="alert"></p>
+
+    <div class="cert-section-label">What this browser can encode</div>
+    <div class="net-table-wrap">
+      <table class="net-table" id="support-table"></table>
+    </div>
+    <p class="tool-note" id="support-note"></p>
+
+    <div class="ifl-controls">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="format-select">Format</label>
+        <select class="tool-select" id="format-select"></select>
+      </div>
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="quality-slider">Quality</label>
+        <div class="tool-slider-row">
+          <input type="range" id="quality-slider" min="1" max="100" value="75">
+          <span class="ifl-slider-value" id="quality-value">75</span>
+        </div>
+      </div>
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="width-input">Resize width (px)</label>
+        <input class="tool-number-input" id="width-input" type="number" min="32" max="2048" step="1" value="640">
+      </div>
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="view-select">View</label>
+        <select class="tool-select" id="view-select">
+          <option value="side">Side by side</option>
+          <option value="diff">Difference, amplified</option>
+          <option value="encoded">Encoded only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="net-grid" id="stat-host"></div>
+
+    <div class="two-col" id="compare-host">
+      <div>
+        <div class="cert-section-label">Original</div>
+        <div class="canvas-frame"><canvas id="src-canvas" width="640" height="420"></canvas></div>
+      </div>
+      <div>
+        <div class="cert-section-label" id="right-label">Encoded</div>
+        <div class="canvas-frame"><canvas id="out-canvas" width="640" height="420"></canvas></div>
+      </div>
+    </div>
+
+    <div class="cert-section-label">Size against quality</div>
+    <div class="ifl-chart-wrap">
+      <canvas id="chart" width="900" height="320"></canvas>
+    </div>
+    <div class="net-table-wrap">
+      <table class="net-table" id="sweep-table"></table>
+    </div>
+    <p class="tool-note" id="sweep-note">
+      Run the sweep to encode this image at every quality step in each format your browser supports,
+      and measure how close each result is to the original.
+    </p>
+
+    <p class="tool-note">
+      <strong>SSIM</strong> is the structural similarity index: it compares local patterns of
+      brightness and contrast the way an eye does, rather than counting how far individual pixels
+      moved. 1.000 is identical. Above about 0.99 the difference is usually invisible at normal
+      viewing size; below 0.95 you can generally find it without looking hard. It is computed here
+      on the luma channel with the usual 11&times;11 Gaussian window, and the difference view is the
+      per-pixel error multiplied by eight so you can see where the encoder spent its errors &mdash;
+      almost always on edges and fine texture.
+    </p>
+    <p class="tool-note">
+      Encoding happens in the browser, so the available formats are whatever <em>your</em> browser
+      can write, not what this page wishes it could. That is checked rather than assumed: some
+      browsers accept a request for a format they cannot encode and quietly hand back a PNG, which
+      would show up here as a wildly large &ldquo;AVIF&rdquo;. Every encode is verified to be the
+      format that was asked for, and anything else is reported as unsupported.
+    </p>
+    <div class="comm-window">
+      <div class="comm-portrait">
+        <svg width="36" height="36" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="comm-body">
+        <div class="comm-label"><span class="dot"></span> Incoming Transmission &mdash; Slippy</div>
+        <p>&quot;The right quality setting is the lowest one where you cannot see the difference. That is measurable.&quot;</p>
+      </div>
+    </div>
+
+    <a href="https://projects.slippylabs.com/" class="hud-btn">← Back to Archive</a>
+  </div>
+</main>
+
+
+<script>
+/* ---- image quality metrics -------------------------------------------------
+   SSIM as published by Wang, Bovik, Sheikh and Simoncelli (2004): compare local
+   means, variances and covariance inside a Gaussian window, and average the
+   result over the image. It is computed on luma, which is where the eye's
+   sensitivity lives and what every encoder spends its bits on.
+
+   The constants stabilise the ratio where the denominators approach zero, and
+   are the standard ones: C1 = (0.01 * L)^2, C2 = (0.03 * L)^2 for L = 255. */
+
+const SSIM_K1 = 0.01;
+const SSIM_K2 = 0.03;
+const SSIM_L = 255;
+const SSIM_WINDOW = 11;
+const SSIM_SIGMA = 1.5;
+
+function toLuma(rgba, w, h) {
+  const out = new Float64Array(w * h);
+  for (let i = 0, j = 0; j < out.length; i += 4, j++) {
+    // Rec. 601 luma, the convention SSIM is normally reported against
+    out[j] = 0.299 * rgba[i] + 0.587 * rgba[i + 1] + 0.114 * rgba[i + 2];
+  }
+  return out;
+}
+
+function gaussianKernel(size, sigma) {
+  const k = new Float64Array(size);
+  const c = (size - 1) / 2;
+  let sum = 0;
+  for (let i = 0; i < size; i++) {
+    k[i] = Math.exp(-((i - c) * (i - c)) / (2 * sigma * sigma));
+    sum += k[i];
+  }
+  for (let i = 0; i < size; i++) k[i] /= sum;
+  return k;
+}
+
+/* Separable convolution with edge clamping. The window is 11x11, so doing it
+   as two 1-D passes is an order of magnitude less work than the direct form. */
+function blur(src, w, h, kernel) {
+  const size = kernel.length;
+  const half = (size - 1) / 2;
+  const tmp = new Float64Array(w * h);
+  const out = new Float64Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+      for (let k = 0; k < size; k++) {
+        const xx = Math.min(w - 1, Math.max(0, x + k - half));
+        acc += src[y * w + xx] * kernel[k];
+      }
+      tmp[y * w + x] = acc;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+      for (let k = 0; k < size; k++) {
+        const yy = Math.min(h - 1, Math.max(0, y + k - half));
+        acc += tmp[yy * w + x] * kernel[k];
+      }
+      out[y * w + x] = acc;
+    }
+  }
+  return out;
+}
+
+/* Mean SSIM over the image, plus the per-pixel map for the difference view. */
+function ssim(lumaA, lumaB, w, h) {
+  const C1 = (SSIM_K1 * SSIM_L) ** 2;
+  const C2 = (SSIM_K2 * SSIM_L) ** 2;
+  const kernel = gaussianKernel(SSIM_WINDOW, SSIM_SIGMA);
+  const a2 = new Float64Array(w * h);
+  const b2 = new Float64Array(w * h);
+  const ab = new Float64Array(w * h);
+  for (let i = 0; i < a2.length; i++) {
+    a2[i] = lumaA[i] * lumaA[i];
+    b2[i] = lumaB[i] * lumaB[i];
+    ab[i] = lumaA[i] * lumaB[i];
+  }
+  const muA = blur(lumaA, w, h, kernel);
+  const muB = blur(lumaB, w, h, kernel);
+  const sA = blur(a2, w, h, kernel);
+  const sB = blur(b2, w, h, kernel);
+  const sAB = blur(ab, w, h, kernel);
+  const map = new Float64Array(w * h);
+  let total = 0;
+  for (let i = 0; i < map.length; i++) {
+    const ma = muA[i];
+    const mb = muB[i];
+    const va = sA[i] - ma * ma;
+    const vb = sB[i] - mb * mb;
+    const cov = sAB[i] - ma * mb;
+    const v = ((2 * ma * mb + C1) * (2 * cov + C2))
+      / ((ma * ma + mb * mb + C1) * (va + vb + C2));
+    map[i] = v;
+    total += v;
+  }
+  return { mean: total / map.length, map };
+}
+
+function psnr(lumaA, lumaB) {
+  let se = 0;
+  for (let i = 0; i < lumaA.length; i++) {
+    const d = lumaA[i] - lumaB[i];
+    se += d * d;
+  }
+  const mse = se / lumaA.length;
+  return mse === 0 ? Infinity : 10 * Math.log10((SSIM_L * SSIM_L) / mse);
+}
+
+function meanAbsoluteError(rgbaA, rgbaB) {
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < rgbaA.length; i += 4) {
+    sum += Math.abs(rgbaA[i] - rgbaB[i]) + Math.abs(rgbaA[i + 1] - rgbaB[i + 1])
+      + Math.abs(rgbaA[i + 2] - rgbaB[i + 2]);
+    n += 3;
+  }
+  return n ? sum / n : 0;
+}
+
+/* The guard this whole page depends on.
+
+   A browser asked for a format it cannot encode does not have to fail: the spec
+   says toBlob falls back to PNG, and Chromium does exactly that for AVIF. The
+   blob still arrives, with a plausible size, and nothing about the call says
+   anything went wrong — so a naive sweep charts PNG bytes in an AVIF column and
+   concludes AVIF is terrible. The only reliable signal is the MIME type of what
+   came back. */
+function encodedAsRequested(requestedType, blobType) {
+  if (!blobType) return false;
+  return blobType.split(';')[0].trim().toLowerCase() === requestedType.toLowerCase();
+}
+
+const FORMATS = [
+  { id: 'image/jpeg', name: 'JPEG', ext: 'jpg', lossless: false,
+    note: 'Everywhere, forever. No alpha channel.' },
+  { id: 'image/webp', name: 'WebP', ext: 'webp', lossless: false,
+    note: 'Usually 25–35% smaller than JPEG at the same quality, with alpha.' },
+  { id: 'image/avif', name: 'AVIF', ext: 'avif', lossless: false,
+    note: 'Smallest of the three when the browser can write it, which many cannot.' },
+  { id: 'image/png', name: 'PNG', ext: 'png', lossless: true,
+    note: 'Lossless: identical output, and the size does not move with quality.' },
+];
+
+const QUALITY_STEPS = [5, 10, 20, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95, 100];
+
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/* ==== UI ==== */
+
+const $ = (id) => document.getElementById(id);
+const srcCanvas = $('src-canvas');
+const outCanvas = $('out-canvas');
+const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+const outCtx = outCanvas.getContext('2d', { willReadFrequently: true });
+
+let sourceImage = null;
+let srcData = null;
+let srcLuma = null;
+let support = null;          // { 'image/jpeg': true, ... }
+let currentBlob = null;
+let sweepResults = null;
+
+/* ---- format support, measured rather than assumed ---- */
+
+async function detectSupport() {
+  const probe = document.createElement('canvas');
+  probe.width = probe.height = 32;
+  const g = probe.getContext('2d');
+  g.fillStyle = '#39ff8f';
+  g.fillRect(0, 0, 32, 32);
+  g.fillStyle = '#ff9130';
+  g.fillRect(0, 0, 16, 16);
+  const out = {};
+  for (const f of FORMATS) {
+    // eslint-disable-next-line no-await-in-loop
+    const blob = await new Promise((r) => probe.toBlob(r, f.id, 0.7));
+    out[f.id] = !!blob && encodedAsRequested(f.id, blob.type);
+    if (blob && !out[f.id]) out[`${f.id}:actual`] = blob.type;
+  }
+  return out;
+}
+
+function renderSupport() {
+  const rows = FORMATS.map((f) => {
+    const ok = support[f.id];
+    const actual = support[`${f.id}:actual`];
+    return `<tr>
+      <td>${f.name}</td>
+      <td><code>${f.id}</code></td>
+      <td>${ok ? '<span class="ifl-yes">can encode</span>'
+        : `<span class="ifl-no">cannot</span>${actual ? ` — asked for it and got <code>${actual}</code>` : ''}`}</td>
+      <td>${f.note}</td>
+    </tr>`;
+  }).join('');
+  $('support-table').innerHTML = `<thead><tr><th>Format</th><th>MIME type</th><th>This browser</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+
+  const faking = FORMATS.filter((f) => !support[f.id] && support[`${f.id}:actual`]);
+  $('support-note').innerHTML = faking.length
+    ? `${faking.map((f) => f.name).join(' and ')} ${faking.length > 1 ? 'are' : 'is'} unavailable here:
+       the browser accepted the request and returned
+       <code>${support[`${faking[0].id}:actual`]}</code> instead. That is the specified behaviour —
+       <code>toBlob</code> falls back to PNG rather than failing — and it is why every encode on this
+       page is checked against the type that came back.`
+    : 'Every format on the list encodes natively here.';
+
+  $('format-select').innerHTML = FORMATS.filter((f) => support[f.id])
+    .map((f) => `<option value="${f.id}"${f.id === 'image/jpeg' ? ' selected' : ''}>${f.name}</option>`)
+    .join('');
+}
+
+/* ---- source handling ---- */
+
+function drawSource() {
+  if (!sourceImage) return;
+  const targetW = Math.max(32, Math.min(2048, Number($('width-input').value) || 640));
+  const scale = targetW / sourceImage.width;
+  const targetH = Math.max(1, Math.round(sourceImage.height * scale));
+  for (const c of [srcCanvas, outCanvas]) {
+    c.width = targetW;
+    c.height = targetH;
+  }
+  srcCtx.imageSmoothingQuality = 'high';
+  srcCtx.drawImage(sourceImage, 0, 0, targetW, targetH);
+  srcData = srcCtx.getImageData(0, 0, targetW, targetH);
+  srcLuma = toLuma(srcData.data, targetW, targetH);
+  sweepResults = null;
+  $('sweep-table').innerHTML = '';
+  drawChart();
+}
+
+async function encodeCurrent() {
+  if (!srcData) return null;
+  const type = $('format-select').value;
+  const quality = Number($('quality-slider').value) / 100;
+  const t0 = performance.now();
+  const blob = await new Promise((r) => srcCanvas.toBlob(r, type, quality));
+  const ms = performance.now() - t0;
+  if (!blob || !encodedAsRequested(type, blob.type)) {
+    $('file-error').textContent = `This browser returned ${blob ? blob.type : 'nothing'} when asked for ${type}.`;
+    $('file-error').style.display = 'block';
+    return null;
+  }
+  $('file-error').style.display = 'none';
+  currentBlob = blob;
+  const bitmap = await createImageBitmap(blob);
+  outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
+  outCtx.drawImage(bitmap, 0, 0);
+  const outData = outCtx.getImageData(0, 0, outCanvas.width, outCanvas.height);
+  const outLuma = toLuma(outData.data, outCanvas.width, outCanvas.height);
+  const s = ssim(srcLuma, outLuma, outCanvas.width, outCanvas.height);
+  const result = {
+    type, quality, bytes: blob.size, ms,
+    ssim: s.mean, psnr: psnr(srcLuma, outLuma),
+    mae: meanAbsoluteError(srcData.data, outData.data),
+    map: s.map, outData,
+  };
+  renderStats(result);
+  renderView(result);
+  return result;
+}
+
+function renderStats(r) {
+  const raw = srcCanvas.width * srcCanvas.height * 3;
+  const tiles = [
+    ['Size', formatBytes(r.bytes)],
+    ['vs raw RGB', `${((r.bytes / raw) * 100).toFixed(1)}%`],
+    ['Bits per pixel', (r.bytes * 8 / (srcCanvas.width * srcCanvas.height)).toFixed(2)],
+    ['SSIM', r.ssim.toFixed(4)],
+    ['PSNR', Number.isFinite(r.psnr) ? `${r.psnr.toFixed(1)} dB` : '∞'],
+    ['Encode time', `${r.ms.toFixed(0)} ms`],
+  ];
+  $('stat-host').innerHTML = tiles.map(([label, value]) => `
+    <div class="net-tile">
+      <div class="net-tile-label">${label}</div>
+      <div class="net-tile-value mono">${value}</div>
+    </div>`).join('');
+}
+
+function renderView(r) {
+  const mode = $('view-select').value;
+  $('compare-host').classList.toggle('ifl-single', mode !== 'side');
+  $('src-canvas').parentElement.parentElement.style.display = mode === 'side' ? '' : 'none';
+  if (mode === 'diff' && r) {
+    const w = outCanvas.width;
+    const h = outCanvas.height;
+    const img = outCtx.createImageData(w, h);
+    for (let i = 0, j = 0; j < w * h; i += 4, j++) {
+      // per-channel absolute error, multiplied so it is actually visible
+      const d = Math.min(255, Math.abs(srcData.data[i] - r.outData.data[i]) * 8);
+      const dg = Math.min(255, Math.abs(srcData.data[i + 1] - r.outData.data[i + 1]) * 8);
+      const db = Math.min(255, Math.abs(srcData.data[i + 2] - r.outData.data[i + 2]) * 8);
+      img.data[i] = d;
+      img.data[i + 1] = dg;
+      img.data[i + 2] = db;
+      img.data[i + 3] = 255;
+    }
+    outCtx.putImageData(img, 0, 0);
+    $('right-label').textContent = 'Difference from the original, ×8';
+  } else if (r) {
+    outCtx.putImageData(r.outData, 0, 0);
+    $('right-label').textContent = `Encoded — ${FORMATS.find((f) => f.id === r.type).name} at quality ${Math.round(r.quality * 100)}`;
+  }
+}
+
+/* ---- the sweep ---- */
+
+async function runSweep() {
+  if (!srcData) return;
+  const btn = $('sweep-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sweeping…';
+  const results = [];
+  for (const f of FORMATS) {
+    if (!support[f.id]) continue;
+    const steps = f.lossless ? [100] : QUALITY_STEPS;
+    for (const q of steps) {
+      // eslint-disable-next-line no-await-in-loop
+      const blob = await new Promise((r) => srcCanvas.toBlob(r, f.id, q / 100));
+      if (!blob || !encodedAsRequested(f.id, blob.type)) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const bitmap = await createImageBitmap(blob);
+      outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
+      outCtx.drawImage(bitmap, 0, 0);
+      const data = outCtx.getImageData(0, 0, outCanvas.width, outCanvas.height);
+      const s = ssim(srcLuma, toLuma(data.data, outCanvas.width, outCanvas.height),
+        outCanvas.width, outCanvas.height);
+      results.push({ format: f.id, name: f.name, quality: q, bytes: blob.size, ssim: s.mean });
+    }
+  }
+  sweepResults = results;
+  btn.disabled = false;
+  btn.textContent = 'Run Quality Sweep';
+  renderSweep();
+  drawChart();
+  await encodeCurrent();
+}
+
+function renderSweep() {
+  if (!sweepResults || !sweepResults.length) return;
+  const byFormat = new Map();
+  for (const r of sweepResults) {
+    if (!byFormat.has(r.name)) byFormat.set(r.name, []);
+    byFormat.get(r.name).push(r);
+  }
+  const target = 0.98;
+  const rows = [...byFormat.entries()].map(([name, list]) => {
+    const hit = list.filter((r) => r.ssim >= target).sort((a, b) => a.bytes - b.bytes)[0];
+    const best = list.slice().sort((a, b) => a.bytes - b.bytes)[0];
+    return { name, hit, best, list };
+  });
+  const jpegHit = rows.find((r) => r.name === 'JPEG');
+  const body = rows.map((r) => `<tr>
+      <td>${r.name}</td>
+      <td>${r.hit ? r.hit.quality : '—'}</td>
+      <td>${r.hit ? formatBytes(r.hit.bytes) : 'never reaches it'}</td>
+      <td>${r.hit && jpegHit && jpegHit.hit
+        ? (r.name === 'JPEG' ? '—'
+          : `${(((r.hit.bytes - jpegHit.hit.bytes) / jpegHit.hit.bytes) * 100).toFixed(0)}%`)
+        : '—'}</td>
+      <td>${formatBytes(r.best.bytes)} at quality ${r.best.quality} (SSIM ${r.best.ssim.toFixed(3)})</td>
+    </tr>`).join('');
+  $('sweep-table').innerHTML = `<thead><tr>
+      <th>Format</th><th>Quality for SSIM ≥ 0.98</th><th>Size there</th>
+      <th>vs JPEG</th><th>Smallest tried</th>
+    </tr></thead><tbody>${body}</tbody>`;
+
+  const winner = rows.filter((r) => r.hit).sort((a, b) => a.hit.bytes - b.hit.bytes)[0];
+  $('sweep-note').innerHTML = winner
+    ? `On <em>this</em> image, <strong>${winner.name}</strong> reaches SSIM 0.98 in the fewest bytes
+       (${formatBytes(winner.hit.bytes)} at quality ${winner.hit.quality})${jpegHit && jpegHit.hit && winner.name !== 'JPEG'
+      ? `, ${(((jpegHit.hit.bytes - winner.hit.bytes) / jpegHit.hit.bytes) * 100).toFixed(0)}% smaller than JPEG's
+         ${formatBytes(jpegHit.hit.bytes)}` : ''}. A photograph, a screenshot and a line drawing
+       will each give a different answer.`
+    : 'No format reached SSIM 0.98 on this image — try a larger width, or a less punishing picture.';
+}
+
+function drawChart() {
+  const c = $('chart');
+  const g = c.getContext('2d');
+  g.fillStyle = '#04070a';
+  g.fillRect(0, 0, c.width, c.height);
+  if (!sweepResults || !sweepResults.length) {
+    g.fillStyle = 'rgba(127,166,149,0.75)';
+    g.font = '13px Consolas, monospace';
+    g.fillText('Run the sweep to plot size against similarity.', 18, 28);
+    return;
+  }
+  const pad = { l: 58, r: 16, t: 16, b: 34 };
+  const maxBytes = Math.max(...sweepResults.map((r) => r.bytes));
+  const minSsim = Math.min(...sweepResults.map((r) => r.ssim), 0.9);
+  const x = (ssimV) => pad.l + ((ssimV - minSsim) / (1 - minSsim)) * (c.width - pad.l - pad.r);
+  const y = (bytes) => c.height - pad.b - (bytes / maxBytes) * (c.height - pad.t - pad.b);
+
+  g.strokeStyle = 'rgba(57,255,143,0.2)';
+  g.fillStyle = 'rgba(127,166,149,0.9)';
+  g.font = '11px Consolas, monospace';
+  for (let i = 0; i <= 4; i++) {
+    const v = minSsim + ((1 - minSsim) * i) / 4;
+    g.beginPath();
+    g.moveTo(x(v), pad.t);
+    g.lineTo(x(v), c.height - pad.b);
+    g.stroke();
+    g.fillText(v.toFixed(3), x(v) - 16, c.height - pad.b + 16);
+  }
+  for (let i = 0; i <= 4; i++) {
+    const v = (maxBytes * i) / 4;
+    g.beginPath();
+    g.moveTo(pad.l, y(v));
+    g.lineTo(c.width - pad.r, y(v));
+    g.stroke();
+    g.fillText(formatBytes(Math.round(v)).padStart(8), 4, y(v) + 4);
+  }
+  g.fillText('SSIM →', c.width - 70, c.height - 6);
+
+  const colours = { JPEG: '#ff9130', WebP: '#39ff8f', AVIF: '#6fb4ff', PNG: '#c08cff' };
+  const byFormat = new Map();
+  for (const r of sweepResults) {
+    if (!byFormat.has(r.name)) byFormat.set(r.name, []);
+    byFormat.get(r.name).push(r);
+  }
+  let legendX = pad.l + 6;
+  for (const [name, list] of byFormat) {
+    const pts = list.slice().sort((a, b) => a.ssim - b.ssim);
+    g.strokeStyle = colours[name] || '#d9fbe8';
+    g.fillStyle = g.strokeStyle;
+    g.lineWidth = 1.6;
+    g.beginPath();
+    pts.forEach((p, i) => (i ? g.lineTo(x(p.ssim), y(p.bytes)) : g.moveTo(x(p.ssim), y(p.bytes))));
+    g.stroke();
+    for (const p of pts) {
+      g.beginPath();
+      g.arc(x(p.ssim), y(p.bytes), 2.6, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.fillText(name, legendX, pad.t + 12);
+    legendX += g.measureText(name).width + 18;
+  }
+}
+
+/* ---- a test image with no external asset ---- */
+
+function makeTestImage() {
+  const w = 800;
+  const h = 520;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#12233d');
+  sky.addColorStop(0.5, '#3a6ea5');
+  sky.addColorStop(1, '#d9b38c');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, w, h);
+  // smooth gradient: where JPEG bands
+  const glow = g.createRadialGradient(w * 0.72, h * 0.3, 8, w * 0.72, h * 0.3, 190);
+  glow.addColorStop(0, 'rgba(255,248,220,0.95)');
+  glow.addColorStop(1, 'rgba(255,248,220,0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, w, h);
+  // hard edges and text: where JPEG rings
+  g.fillStyle = '#0d1f18';
+  g.beginPath();
+  g.moveTo(0, h * 0.72);
+  g.lineTo(w * 0.3, h * 0.52);
+  g.lineTo(w * 0.52, h * 0.68);
+  g.lineTo(w * 0.78, h * 0.46);
+  g.lineTo(w, h * 0.62);
+  g.lineTo(w, h);
+  g.lineTo(0, h);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.font = 'bold 44px Consolas, monospace';
+  g.fillText('SHARP TEXT 0123', 28, 74);
+  g.font = '15px Consolas, monospace';
+  g.fillText('small text is where compression shows first', 30, 104);
+  // fine texture: where the bits go
+  const rnd = (() => { let s = 12345; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+  for (let i = 0; i < 9000; i++) {
+    const px = rnd() * w;
+    const py = h * 0.52 + rnd() * h * 0.48;
+    g.fillStyle = `rgba(${120 + rnd() * 90 | 0}, ${150 + rnd() * 80 | 0}, ${110 + rnd() * 70 | 0}, 0.5)`;
+    g.fillRect(px, py, 2, 2);
+  }
+  // flat colour patches: the easy case
+  ['#ff4655', '#39ff8f', '#6fb4ff', '#ffe066'].forEach((col, i) => {
+    g.fillStyle = col;
+    g.fillRect(w - 190 + i * 44, h - 70, 38, 38);
+  });
+  return c;
+}
+
+/* ---- wiring ---- */
+
+$('sample-btn').addEventListener('click', async () => {
+  sourceImage = makeTestImage();
+  $('file-error').style.display = 'none';
+  $('width-input').value = '640';
+  drawSource();
+  await encodeCurrent();
+});
+
+$('file-input').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    sourceImage = await createImageBitmap(file);
+    $('file-error').style.display = 'none';
+    $('width-input').value = String(Math.min(900, sourceImage.width));
+    drawSource();
+    await encodeCurrent();
+  } catch (ex) {
+    $('file-error').textContent = 'That file could not be decoded as an image.';
+    $('file-error').style.display = 'block';
+  }
+});
+
+$('quality-slider').addEventListener('input', (e) => {
+  $('quality-value').textContent = e.target.value;
+});
+$('quality-slider').addEventListener('change', () => encodeCurrent());
+$('format-select').addEventListener('change', () => encodeCurrent());
+$('view-select').addEventListener('change', () => encodeCurrent());
+let widthTimer = null;
+$('width-input').addEventListener('input', () => {
+  clearTimeout(widthTimer);
+  widthTimer = setTimeout(async () => { drawSource(); await encodeCurrent(); }, 250);
+});
+$('sweep-btn').addEventListener('click', runSweep);
+$('download-btn').addEventListener('click', () => {
+  if (!currentBlob) return;
+  const f = FORMATS.find((x) => x.id === currentBlob.type.split(';')[0]) || FORMATS[0];
+  const url = URL.createObjectURL(currentBlob);
+  const a = $('download-link');
+  a.href = url;
+  a.download = `encoded-q${$('quality-slider').value}.${f.ext}`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+});
+
+/* ---- headless hook ---- */
+
+window.__iflab = {
+  ssim, psnr, toLuma, gaussianKernel, blur, meanAbsoluteError, encodedAsRequested,
+  FORMATS, QUALITY_STEPS,
+  get support() { return support; },
+  get sweep() { return sweepResults; },
+  loadSample() { sourceImage = makeTestImage(); drawSource(); return encodeCurrent(); },
+  encode(type, quality) {
+    $('format-select').value = type;
+    $('quality-slider').value = String(quality);
+    return encodeCurrent();
+  },
+  runSweep,
+};
+
+/* ---- boot ---- */
+
+(async () => {
+  support = await detectSupport();
+  renderSupport();
+  sourceImage = makeTestImage();
+  drawSource();
+  await encodeCurrent();
+  drawChart();
+})();
+</script>
+<!-- Slippy Deck: floating Slippy TV + jukebox player. Renders nothing unless admin.slippylabs.com/whoami confirms a signed-in account. -->
+<script defer src="https://slippylabs.com/deck/deck.js"></script>
+<!-- Slippy Labs sitewide privacy link. Self-contained on purpose: these sites
+     share no CSS, so it carries its own styles and inherits the page's text
+     colour instead of assuming a palette. position/z-index are load bearing --
+     the HUD theme's .starfield/.scanlines are fixed at z-index 0-1 and would
+     paint straight over an unpositioned footer.
+     The .page-wrap trim below is what keeps the bar on the first screen. -->
+<div class="sl-legal"><a href="https://slippylabs.com/privacy.html">Privacy</a></div>
+<style>
+.sl-legal{box-sizing:border-box;position:relative;z-index:3;height:64px;display:flex;align-items:center;justify-content:center;margin:0;padding:0 12px;font-family:"Consolas","SFMono-Regular",Menlo,Monaco,"Courier New",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+.sl-legal a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px}
+.sl-legal a:hover,.sl-legal a:focus-visible{text-decoration:underline;opacity:1}
+/* This page centres .page-wrap at min-height:100vh, which would push the bar a
+   whole screen below the fold. Give back exactly the bar height instead of
+   adding a scrollbar to a page that had none. */
+.page-wrap{min-height:calc(100vh - 64px)}
+</style>
+</body>
+</html>
